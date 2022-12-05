@@ -2044,17 +2044,28 @@ public class SCIMUserManager implements UserManager {
     private int getMaxLimit(String domainName) {
 
         int givenMax = UserCoreConstants.MAX_USER_ROLE_LIST;
-        if (StringUtils.isEmpty(domainName)) {
-            domainName = UserCoreConstants.PRIMARY_DEFAULT_DOMAIN_NAME;
+
+        try {
+            if (StringUtils.isEmpty(domainName)) {
+                domainName = carbonUM.getRealmConfiguration().getUserStoreProperty(UserCoreConstants.RealmConfig.
+                        PROPERTY_DOMAIN_NAME);
+                if (log.isDebugEnabled()) {
+                    log.debug("Primary user store DomainName picked as " + domainName);
+                }
+            }
+            if (carbonUM.getSecondaryUserStoreManager(domainName).getRealmConfiguration()
+                    .getUserStoreProperty(UserCoreConstants.RealmConfig.PROPERTY_MAX_USER_LIST) != null) {
+                givenMax = Integer.parseInt(carbonUM.getSecondaryUserStoreManager(domainName).getRealmConfiguration()
+                        .getUserStoreProperty(UserCoreConstants.RealmConfig.PROPERTY_MAX_USER_LIST));
+            }
+
+            return givenMax;
+
+        } catch(NullPointerException e) {
+            String msg = "PRIMARY user store domain name cannot be a null value.";
+            throw new NullPointerException(msg);
         }
 
-        if (carbonUM.getSecondaryUserStoreManager(domainName).getRealmConfiguration()
-                .getUserStoreProperty(UserCoreConstants.RealmConfig.PROPERTY_MAX_USER_LIST) != null) {
-            givenMax = Integer.parseInt(carbonUM.getSecondaryUserStoreManager(domainName).getRealmConfiguration()
-                    .getUserStoreProperty(UserCoreConstants.RealmConfig.PROPERTY_MAX_USER_LIST));
-        }
-
-        return givenMax;
     }
 
     /**
